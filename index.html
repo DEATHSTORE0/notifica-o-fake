@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo de notificações</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:20px;font-family:Arial,Helvetica,sans-serif;background:#f3f4f6;color:#222}
+.container{max-width:520px;margin:auto}
+.card{background:#fff;border-radius:18px;padding:20px;box-shadow:0 5px 25px rgba(0,0,0,.08)}
+h1{margin:0 0 20px;font-size:24px}
+label{display:block;margin-top:15px;margin-bottom:7px;font-weight:bold}
+select,input,button{width:100%;min-height:48px;border-radius:11px;border:1px solid #ddd;padding:12px;font-size:16px}
+input[type="color"]{padding:4px}
+button{margin-top:15px;background:#111;color:#fff;border:0;font-weight:bold;cursor:pointer}
+.preview-box{margin-top:25px}
+.preview-title{font-weight:bold;margin-bottom:10px}
+.notification{background:#292929;color:#fff;border-radius:16px;padding:14px;display:flex;gap:12px;align-items:flex-start}
+.app-icon{width:48px;height:48px;min-width:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:bold;overflow:hidden}
+.app-icon img{width:100%;height:100%;object-fit:cover}
+.notification-content{flex:1;min-width:0}
+.app-name{font-size:14px;font-weight:bold;margin-bottom:4px}
+.notification-head{font-size:16px;font-weight:bold;line-height:1.3}
+.notification-body{margin-top:3px;font-size:15px;line-height:1.3;color:#e5e5e5}
+.hidden{display:none}
+.simulation-note{margin-top:10px;text-align:center;font-size:11px;color:#777}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <h1>Demo de notificações</h1>
+
+    <label for="origem">Banco/serviço de origem</label>
+    <select id="origem">
+      <option value="Cakto">Cakto</option>
+      <option value="Mercado Pago">Mercado Pago</option>
+      <option value="Nubank">Nubank</option>
+      <option value="PicPay">PicPay</option>
+      <option value="Spotify">Spotify</option>
+      <option value="manual">Personalizado</option>
+    </select>
+
+    <div id="campoPersonalizado" class="hidden">
+      <label for="nomePersonalizado">Nome personalizado</label>
+      <input id="nomePersonalizado" type="text" placeholder="Digite o nome">
+    </div>
+
+    <label for="iconePersonalizado">Ícone personalizado</label>
+    <input id="iconePersonalizado" type="file" accept="image/*">
+
+    <label for="corPersonalizada">Cor do ícone</label>
+    <input id="corPersonalizada" type="color" value="#16b875">
+
+    <label for="tituloMensagem">Título da mensagem</label>
+    <input id="tituloMensagem" type="text" placeholder="Título">
+
+    <label for="textoMensagem">Mensagem</label>
+    <input id="textoMensagem" type="text" placeholder="Mensagem">
+
+    <label for="destino">Banco/serviço de destino</label>
+    <input id="destino" type="text" placeholder="Digite o destino">
+
+    <label for="valor">Valor</label>
+    <input id="valor" type="number" min="0" max="50000" step="0.01" placeholder="Máximo R$ 50.000">
+
+    <button type="button" id="btnModelo">Aplicar modelo</button>
+    <button type="button" id="btnNotificacao">Mostrar demonstração</button>
+
+    <div class="preview-box">
+      <div class="preview-title">Prévia</div>
+
+      <div class="notification">
+        <div class="app-icon" id="appIcon">C</div>
+
+        <div class="notification-content">
+          <div class="app-name" id="appName">Cakto</div>
+          <div class="notification-head" id="notificationTitle">Venda aprovada</div>
+          <div class="notification-body" id="notificationBody">Sua comissão foi registrada.</div>
+        </div>
+      </div>
+
+      <div class="simulation-note">Simulação visual</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const modelos = {
+  "Cakto": {
+    titulo: "Venda aprovada",
+    mensagem: "Sua comissão foi registrada.",
+    cor: "#16b875",
+    iniciais: "C"
+  },
+  "Mercado Pago": {
+    titulo: "Pagamento recebido",
+    mensagem: "Você recebeu um pagamento.",
+    cor: "#168cff",
+    iniciais: "MP"
+  },
+  "Nubank": {
+    titulo: "Transferência recebida",
+    mensagem: "Você recebeu uma transferência.",
+    cor: "#6f2cff",
+    iniciais: "N"
+  },
+  "PicPay": {
+    titulo: "Pagamento recebido",
+    mensagem: "Você recebeu um pagamento.",
+    cor: "#16b875",
+    iniciais: "PP"
+  },
+  "Spotify": {
+    titulo: "Pagamento confirmado",
+    mensagem: "Sua assinatura foi confirmada.",
+    cor: "#18a558",
+    iniciais: "S"
+  }
+};
+
+let imagemPersonalizada = "";
+
+const origem = document.getElementById("origem");
+const campoPersonalizado = document.getElementById("campoPersonalizado");
+const nomePersonalizado = document.getElementById("nomePersonalizado");
+const iconePersonalizado = document.getElementById("iconePersonalizado");
+const corPersonalizada = document.getElementById("corPersonalizada");
+const tituloMensagem = document.getElementById("tituloMensagem");
+const textoMensagem = document.getElementById("textoMensagem");
+const appIcon = document.getElementById("appIcon");
+const appName = document.getElementById("appName");
+const notificationTitle = document.getElementById("notificationTitle");
+const notificationBody = document.getElementById("notificationBody");
+
+function getNome() {
+  if (origem.value === "manual") {
+    return nomePersonalizado.value.trim() || "Personalizado";
+  }
+  return origem.value;
+}
+
+function updatePreview() {
+  const modelo = modelos[origem.value];
+  const nome = getNome();
+
+  let iniciais = modelo ? modelo.iniciais : "D";
+  const cor = corPersonalizada.value;
+
+  appName.textContent = nome;
+  notificationTitle.textContent =
+    tituloMensagem.value.trim() || "Título da mensagem";
+  notificationBody.textContent =
+    textoMensagem.value.trim() || "Mensagem da demonstração";
+
+  appIcon.style.background = cor;
+
+  if (imagemPersonalizada) {
+    appIcon.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = imagemPersonalizada;
+    img.alt = "";
+    appIcon.appendChild(img);
+  } else {
+    appIcon.innerHTML = "";
+    appIcon.textContent = iniciais;
+  }
+}
+
+function aplicarModelo() {
+  const modelo = modelos[origem.value];
+
+  if (modelo) {
+    tituloMensagem.value = modelo.titulo;
+    textoMensagem.value = modelo.mensagem;
+    corPersonalizada.value = modelo.cor;
+  } else {
+    tituloMensagem.value = "";
+    textoMensagem.value = "";
+  }
+
+  updatePreview();
+}
+
+function changeOrigin() {
+  const personalizado = origem.value === "manual";
+
+  campoPersonalizado.classList.toggle("hidden", !personalizado);
+
+  if (!personalizado) {
+    aplicarModelo();
+  } else {
+    updatePreview();
+  }
+}
+
+iconePersonalizado.addEventListener("change", function(event) {
+  const arquivo = event.target.files[0];
+
+  if (!arquivo) {
+    imagemPersonalizada = "";
+    updatePreview();
+    return;
+  }
+
+  if (!arquivo.type.startsWith("image/")) {
+    alert("Selecione uma imagem válida.");
+    iconePersonalizado.value = "";
+    imagemPersonalizada = "";
+    updatePreview();
+    return;
+  }
+
+  const leitor = new FileReader();
+
+  leitor.onload = function() {
+    imagemPersonalizada = leitor.result;
+    updatePreview();
+  };
+
+  leitor.readAsDataURL(arquivo);
+});
+
+origem.addEventListener("change", changeOrigin);
+nomePersonalizado.addEventListener("input", updatePreview);
+corPersonalizada.addEventListener("input", updatePreview);
+tituloMensagem.addEventListener("input", updatePreview);
+textoMensagem.addEventListener("input", updatePreview);
+
+document.getElementById("btnModelo").addEventListener("click", aplicarModelo);
+
+document.getElementById("btnNotificacao").addEventListener("click", function() {
+  const nome = getNome();
+  const titulo = tituloMensagem.value.trim();
+  const texto = textoMensagem.value.trim();
+
+  if (!titulo || !texto) {
+    alert("Preencha o título e a mensagem.");
+    return;
+  }
+
+  updatePreview();
+
+  if (!("Notification" in window)) {
+    alert("Seu navegador não permite notificações neste dispositivo.");
+    return;
+  }
+
+  if (Notification.permission === "granted") {
+    new Notification(nome, {
+      body: titulo + " — " + texto,
+      tag: "demo-notificacao"
+    });
+    return;
+  }
+
+  if (Notification.permission === "denied") {
+    alert("As notificações estão bloqueadas no navegador.");
+    return;
+  }
+
+  Notification.requestPermission().then(function(permissao) {
+    if (permissao === "granted") {
+      new Notification(nome, {
+        body: titulo + " — " + texto,
+        tag: "demo-notificacao"
+      });
+    }
+  });
+});
+
+aplicarModelo();
+</script>
+
+</body>
+</html>
